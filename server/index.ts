@@ -1,9 +1,15 @@
+import fastifyMultipart from '@fastify/multipart'
 import fastifyStatic from '@fastify/static'
+import websocket from '@fastify/websocket'
 import Fastify from 'fastify'
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import YAML from 'yaml'
+import { registerFileRoutes } from './files'
+import { registerSshHostRoutes } from './sshHosts'
+import { registerTerminalRoutes } from './terminal'
 import { systemAppIds, systemApps } from '../src/config/systemApps'
 import type { NavApp, OpenMode } from '../src/types/app'
 
@@ -16,6 +22,18 @@ const distDir = path.join(rootDir, 'dist')
 
 const app = Fastify({ logger: true })
 const allowedOpenModes = new Set<OpenMode>(['same-tab', 'new-tab'])
+
+// Register plugins
+await app.register(websocket)
+await app.register(fastifyMultipart, {
+  limits: { fileSize: 100 * 1024 * 1024 },
+})
+
+// Register terminal and file manager routes
+const filesRoot = process.env.FILES_ROOT || os.homedir()
+registerTerminalRoutes(app)
+registerFileRoutes(app, filesRoot)
+registerSshHostRoutes(app, dataDir)
 
 const readApps = async () => {
   const raw = await readFile(appsFile, 'utf-8')

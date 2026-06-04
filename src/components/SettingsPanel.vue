@@ -323,7 +323,6 @@ const setAddressMode = (mode: AddressMode) => {
                     <span>颜色</span>
                     <input v-model="form.accent" type="color" />
                   </label>
-
                 </div>
 
                 <p v-if="formError" class="form-error">{{ formError }}</p>

@@ -4,7 +4,9 @@ import { fetchApps, saveApps } from '../api/apps'
 import type { NavApp } from '../types/app'
 import AppGrid from './AppGrid.vue'
 import DesktopWindow from './DesktopWindow.vue'
+import FileManagerPanel from './FileManagerPanel.vue'
 import SettingsPanel from './SettingsPanel.vue'
+import TerminalPanel from './TerminalPanel.vue'
 import TopBar from './TopBar.vue'
 
 type OpenWindow = {
@@ -24,13 +26,13 @@ const toastTone = ref<'info' | 'error'>('info')
 let toastTimer: number | undefined
 let nextWindowZIndex = 10
 
-const runningAppIds = computed(() => new Set(openWindows.value.map((openWindow) => openWindow.id)))
+const runningAppIds = computed(() => new Set(openWindows.value.map((w) => w.id)))
 const minimizedAppIds = computed(
   () =>
     new Set(
       openWindows.value
-        .filter((openWindow) => openWindow.minimized)
-        .map((openWindow) => openWindow.id),
+        .filter((w) => w.minimized)
+        .map((w) => w.id),
     ),
 )
 
@@ -74,7 +76,7 @@ const handleSaveApps = async (nextApps: NavApp[]) => {
 }
 
 const focusWindow = (id: string) => {
-  const target = openWindows.value.find((openWindow) => openWindow.id === id)
+  const target = openWindows.value.find((w) => w.id === id)
 
   if (target) {
     target.minimized = false
@@ -84,11 +86,11 @@ const focusWindow = (id: string) => {
 }
 
 const closeWindow = (id: string) => {
-  openWindows.value = openWindows.value.filter((openWindow) => openWindow.id !== id)
+  openWindows.value = openWindows.value.filter((w) => w.id !== id)
 }
 
 const minimizeWindow = (id: string) => {
-  const target = openWindows.value.find((openWindow) => openWindow.id === id)
+  const target = openWindows.value.find((w) => w.id === id)
 
   if (target) {
     target.minimized = true
@@ -96,7 +98,7 @@ const minimizeWindow = (id: string) => {
 }
 
 const toggleMaximizeWindow = (id: string) => {
-  const target = openWindows.value.find((openWindow) => openWindow.id === id)
+  const target = openWindows.value.find((w) => w.id === id)
 
   if (target) {
     target.maximized = !target.maximized
@@ -111,17 +113,16 @@ const openWindowExternal = (app: NavApp) => {
 }
 
 const openDesktopWindow = (app: NavApp) => {
-  const id = app.id
-  const existingWindow = openWindows.value.find((openWindow) => openWindow.id === id)
+  const existingWindow = openWindows.value.find((w) => w.id === app.id)
 
   if (existingWindow) {
-    focusWindow(id)
+    focusWindow(app.id)
     return
   }
 
   nextWindowZIndex += 1
   openWindows.value.push({
-    id,
+    id: app.id,
     app: { ...app },
     maximized: false,
     minimized: false,
@@ -187,6 +188,14 @@ onBeforeUnmount(() => {
         :saving="saving"
         @close="closeWindow(openWindow.id)"
         @save="handleSaveApps"
+      />
+      <TerminalPanel
+        v-else-if="openWindow.app.url === 'app://terminal'"
+        embedded
+      />
+      <FileManagerPanel
+        v-else-if="openWindow.app.url === 'app://file-manager'"
+        embedded
       />
       <iframe
         v-else

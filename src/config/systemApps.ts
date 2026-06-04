@@ -4,7 +4,7 @@ export const systemApps: NavApp[] = [
   {
     id: 'file-manager',
     name: '文件管理',
-    url: '/files/',
+    url: 'app://file-manager',
     icon: 'folder',
     category: 'system',
     description: '内置文件管理入口',
@@ -26,7 +26,7 @@ export const systemApps: NavApp[] = [
   {
     id: 'terminal',
     name: '终端',
-    url: '/terminal/',
+    url: 'app://terminal',
     icon: 'terminal',
     category: 'system',
     description: '内置终端入口',
