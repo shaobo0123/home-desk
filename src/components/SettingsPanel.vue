@@ -1,27 +1,23 @@
 <script setup lang="ts">
 import {
   AppWindow,
-  Boxes,
-  Download,
   ExternalLink,
-  Film,
-  Folder,
-  Globe,
   Grid2X2,
-  Home,
   LockKeyhole,
   Plus,
-  Router,
-  Server,
-  Settings,
-  Terminal,
   Trash2,
   X,
 } from 'lucide-vue-next'
 import { computed, ref, watch } from 'vue'
-import type { Component } from 'vue'
 import type { NavApp, OpenMode } from '../types/app'
+import {
+  buildCurrentHostUrl,
+  getCurrentHostPrefix,
+  isValidPort,
+} from '../utils/hostUrl'
 import ConfirmDialog from './ConfirmDialog.vue'
+
+type AddressMode = 'url' | 'port'
 
 const props = defineProps<{
   apps: NavApp[]
@@ -34,24 +30,11 @@ const emit = defineEmits<{
   save: [apps: NavApp[]]
 }>()
 
-const iconMap: Record<string, Component> = {
-  boxes: Boxes,
-  download: Download,
-  film: Film,
-  folder: Folder,
-  globe: Globe,
-  home: Home,
-  router: Router,
-  server: Server,
-  settings: Settings,
-  terminal: Terminal,
-}
-
-const iconOptions = Object.keys(iconMap)
-
 const emptyForm = () => ({
   name: '',
   url: '',
+  port: '',
+  addressMode: 'url' as AddressMode,
   icon: 'globe',
   accent: '#38bdf8',
 })
@@ -69,6 +52,29 @@ const systemDraftApps = computed(() => draftApps.value.filter((app) => app.locke
 const pendingDeleteApp = computed(() =>
   pendingDeleteId.value ? draftApps.value.find((a) => a.id === pendingDeleteId.value) : null,
 )
+const currentHostPrefix = computed(() => getCurrentHostPrefix())
+const formResolvedUrl = computed(() =>
+  form.value.addressMode === 'port' ? buildCurrentHostUrl(form.value.port) : form.value.url.trim(),
+)
+
+const getFaviconUrl = (url: string) => {
+  const trimmed = url.trim()
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) return ''
+  try {
+    const parsed = new URL(trimmed)
+    return `${parsed.origin}/favicon.ico`
+  } catch {
+    return ''
+  }
+}
+
+const formFaviconUrl = computed(() => getFaviconUrl(formResolvedUrl.value))
+const formFaviconFailed = ref(false)
+const failedFavicons = ref(new Set<string>())
+
+watch(formFaviconUrl, () => {
+  formFaviconFailed.value = false
+})
 
 watch(
   () => props.apps,
@@ -106,9 +112,19 @@ const autoSave = () => {
 const addApp = () => {
   formError.value = ''
   const name = form.value.name.trim()
-  const url = form.value.url.trim()
+  const url = formResolvedUrl.value
 
-  if (!name || !url) {
+  if (!name) {
+    formError.value = '名称必填'
+    return
+  }
+
+  if (form.value.addressMode === 'port' && !isValidPort(form.value.port)) {
+    formError.value = '端口需为 1-65535'
+    return
+  }
+
+  if (!url) {
     formError.value = '名称和地址必填'
     return
   }
@@ -160,6 +176,15 @@ const handleBackdropClick = () => {
   if (!props.embedded) {
     emit('close')
   }
+}
+
+const onFaviconError = (url: string) => {
+  failedFavicons.value.add(url)
+}
+
+const setAddressMode = (mode: AddressMode) => {
+  form.value.addressMode = mode
+  formError.value = ''
 }
 </script>
 
@@ -242,7 +267,28 @@ const handleBackdropClick = () => {
                   />
                 </label>
 
-                <label>
+                <div class="address-mode-toggle" aria-label="地址类型">
+                  <button
+                    type="button"
+                    class="mode-option"
+                    :class="{ active: form.addressMode === 'url' }"
+                    :disabled="saving"
+                    @click="setAddressMode('url')"
+                  >
+                    完整地址
+                  </button>
+                  <button
+                    type="button"
+                    class="mode-option"
+                    :class="{ active: form.addressMode === 'port' }"
+                    :disabled="saving"
+                    @click="setAddressMode('port')"
+                  >
+                    当前主机端口
+                  </button>
+                </div>
+
+                <label v-if="form.addressMode === 'url'">
                   <span>地址</span>
                   <input
                     v-model="form.url"
@@ -252,21 +298,25 @@ const handleBackdropClick = () => {
                   />
                 </label>
 
-                <fieldset class="icon-fieldset">
-                  <legend>图标</legend>
-                  <div class="icon-grid">
-                    <button
-                      v-for="icon in iconOptions"
-                      :key="icon"
-                      type="button"
-                      class="icon-option"
-                      :class="{ active: form.icon === icon }"
-                      @click="form.icon = icon"
-                    >
-                      <component :is="iconMap[icon]" :size="20" />
-                    </button>
+                <label v-else>
+                  <span>端口</span>
+                  <div class="port-url-field">
+                    <span class="port-url-prefix">{{ currentHostPrefix }}:</span>
+                    <input
+                      v-model="form.port"
+                      autocomplete="off"
+                      inputmode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="5244"
+                      :disabled="saving"
+                    />
                   </div>
-                </fieldset>
+                </label>
+
+                <div v-if="formFaviconUrl && !formFaviconFailed" class="favicon-preview">
+                  <img :src="formFaviconUrl" alt="图标预览" @error="formFaviconFailed = true" />
+                  <span>自动获取的图标</span>
+                </div>
 
                 <div class="form-row compact">
                   <label>
@@ -286,7 +336,15 @@ const handleBackdropClick = () => {
 
               <div class="settings-list" aria-label="自定义应用列表">
                 <article v-for="app in customApps" :key="app.id" class="settings-item">
+                  <img
+                    v-if="getFaviconUrl(app.url) && !failedFavicons.has(app.url)"
+                    :src="getFaviconUrl(app.url)"
+                    :alt="app.name"
+                    class="settings-item__favicon"
+                    @error="onFaviconError(app.url)"
+                  />
                   <span
+                    v-else
                     class="settings-item__swatch"
                     :style="{ background: app.accent ?? '#38bdf8' }"
                   />

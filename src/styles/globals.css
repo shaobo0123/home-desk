@@ -263,6 +263,13 @@ button {
     0 12px 28px rgba(0, 0, 0, 0.28);
 }
 
+.app-icon__favicon {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
 .app-icon__name {
   width: 100%;
   overflow: hidden;
@@ -433,9 +440,16 @@ button {
   gap: 6px;
 }
 
+.address-mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
 .mode-option {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   padding: 5px 10px;
   color: rgba(255, 255, 255, 0.52);
@@ -580,6 +594,36 @@ button {
   padding: 4px;
 }
 
+.port-url-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(78px, 112px);
+  align-items: center;
+  min-height: 38px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+}
+
+.port-url-prefix {
+  min-width: 0;
+  padding: 0 0 0 10px;
+  overflow: hidden;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-form .port-url-field input {
+  min-height: 36px;
+  padding-left: 6px;
+  background: transparent;
+  border: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0;
+}
+
 .icon-fieldset {
   border: 0;
   margin: 0;
@@ -668,7 +712,7 @@ button {
 
 .settings-item {
   display: grid;
-  grid-template-columns: 14px minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
   min-height: 58px;
@@ -679,9 +723,39 @@ button {
 }
 
 .settings-item__swatch {
-  width: 14px;
+  width: 36px;
   height: 36px;
+  border-radius: 6px;
+}
+
+.settings-item__favicon {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.favicon-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
+}
+
+.favicon-preview img {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.favicon-preview span {
+  color: rgba(255, 255, 255, 0.56);
+  font-size: 12px;
 }
 
 .settings-item strong,

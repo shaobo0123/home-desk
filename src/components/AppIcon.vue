@@ -11,7 +11,7 @@ import {
   Settings,
   Terminal,
 } from 'lucide-vue-next'
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { Component } from 'vue'
 import type { NavApp } from '../types/app'
 
@@ -38,7 +38,34 @@ const iconMap: Record<string, Component> = {
   terminal: Terminal,
 }
 
+const faviconFailed = ref(false)
+
+watch(() => props.app.url, () => {
+  faviconFailed.value = false
+})
+
+const isExternal = computed(() => {
+  const url = props.app.url
+  return url.startsWith('http://') || url.startsWith('https://')
+})
+
+const faviconUrl = computed(() => {
+  if (!isExternal.value) return ''
+  try {
+    const url = new URL(props.app.url)
+    return `${url.origin}/favicon.ico`
+  } catch {
+    return ''
+  }
+})
+
 const iconComponent = computed(() => iconMap[props.app.icon] ?? Globe)
+
+const showFavicon = computed(() => isExternal.value && faviconUrl.value && !faviconFailed.value)
+
+const onFaviconError = () => {
+  faviconFailed.value = true
+}
 
 const openApp = () => emit('openApp', props.app)
 </script>
@@ -52,7 +79,20 @@ const openApp = () => emit('openApp', props.app)
     @click="openApp"
   >
     <span class="app-icon__tile" :style="{ '--accent': app.accent ?? '#38bdf8' }">
-      <component :is="iconComponent" :size="30" stroke-width="1.9" :style="{ color: app.iconColor ?? '#ffffff' }" />
+      <img
+        v-if="showFavicon"
+        :src="faviconUrl"
+        :alt="app.name"
+        class="app-icon__favicon"
+        @error="onFaviconError"
+      />
+      <component
+        v-else
+        :is="iconComponent"
+        :size="30"
+        stroke-width="1.9"
+        :style="{ color: app.iconColor ?? '#ffffff' }"
+      />
       <span v-if="running" class="app-icon__state" aria-hidden="true" />
     </span>
     <span class="app-icon__name">{{ app.name }}</span>

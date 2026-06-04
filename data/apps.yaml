@@ -26,9 +26,9 @@
   locked: true
   accent: "#111827"
   iconColor: "#ffffff"
-- id: cli-proxy-api
-  name: cli-proxy--api
-  url: http://localhost:8317/management.html#/login
+- id: openlist
+  name: openlist
+  url: http://192.168.1.42:5244
   icon: globe
   category: ""
   description: ""
